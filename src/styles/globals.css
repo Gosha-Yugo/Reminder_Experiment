@@ -1,0 +1,165 @@
+:root {
+  --bg: #0b0d10;
+  --panel: #151921;
+  --muted: #9aa4b2;
+  --text: #e6ebf0;
+  --primary: #3b82f6;
+  --primary-700: #2563eb;
+  --danger: #ef4444;
+  --ok: #10b981;
+  --border: #232a36;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "ヒラギノ角ゴ ProN", Meiryo, sans-serif;
+}
+
+main.container {
+  max-width: 880px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.card + .card { margin-top: 16px; }
+
+h1 { font-size: 22px; margin: 8px 0 16px; }
+h2 { font-size: 18px; margin: 0 0 12px; }
+
+label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+
+input[type="text"],
+input[type="time"],
+input[type="date"],
+input[type="number"],
+select {
+  width: 100%;
+  background: #0f131a;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  outline: none;
+}
+/* 小さなアイコン風ボタン */
+button.iconbtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0 8px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+button.iconbtn:hover { background: #0f131a; }
+.row-inline { display: flex; gap: 8px; align-items: center; }
+
+button {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--primary);
+  color: #fff;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover { background: var(--primary-700); }
+button.ghost { background: transparent; border-color: var(--border); color: var(--text); }
+button.danger { background: var(--danger); }
+button.ok { background: var(--ok); }
+
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.helper { font-size: 12px; color: var(--muted); margin-top: 6px; }
+hr.sep { border: none; height: 1px; background: var(--border); margin: 16px 0; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 999px; font-size: 12px;
+  border: 1px solid var(--border); background: #0f131a; color: var(--muted);
+}
+
+.toast {
+  position: fixed; right: 16px; bottom: 16px; padding: 12px 14px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+}
+.toast.ok { border-color: #1f5e4c; }
+.toast.err { border-color: #6b1f1f; }
+/* Calendar */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+.cal-week {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 4px 0;
+}
+.cal-cell {
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 10px;
+  cursor: pointer;
+}
+.cal-cell.dim { opacity: 0.4; }
+.cal-cell.selected { outline: 2px solid var(--primary); }
+.cal-head { display: flex; justify-content: space-between; align-items: center; }
+.cal-day { font-weight: 700; font-size: 14px; color: var(--text); }
+.cal-day.today { color: var(--primary); }
+.cal-body { display: flex; gap: 6px; margin-top: 8px; }
+
+/* 既存の .badge/.chip スタイルを流用（前に追加済みのもの） */
+
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); }
+.badge-金 { background: #bfa100; color: #0b0b0b; }
+.badge-銀 { background: #9aa4b2; color: #0b0b0b; }
+
+.chip {
+  font-size: 12px; padding: 2px 6px; border-radius: 8px;
+  border: 1px solid var(--border); background: #0f131a; color: var(--muted);
+}
+.chip.on { color: #e6ebf0; border-color: #2a3342; }
+.chip-self.on { background: rgba(16,185,129,0.15); }  /* 緑系 */
+.chip-check.on { background: rgba(59,130,246,0.15); } /* 青系 */
+.chip-gold { background: #bfa100; color: #0b0b0b; }
+.chip-silver { background: #9aa4b2; color: #0b0b0b; }
+
+.detail { display: grid; gap: 8px; }
+.detail-row { display: grid; grid-template-columns: 120px 1fr; gap: 6px; }
+.detail-key { color: var(--muted); }
+.detail-val { color: var(--text); }
+
+
+
+.checklist { list-style: none; padding: 0; }
+.checklist li {
+  background: var(--panel);
+  margin: 6px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.checklist li.checked {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
