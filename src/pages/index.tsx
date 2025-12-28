@@ -1,107 +1,82 @@
-import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
-import { useUser } from "../contexts/UserContext";
-
-// ここはあなたの初期化ファイルに合わせて変更してください
-// 例: src/lib/firebase.ts で export const db = getFirestore(app) しているならそれを使う
-import { db } from "../lib/firebase";
-
-import { doc, getDoc } from "firebase/firestore";
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
+import dayjs from 'dayjs';
+import { useUser } from '../contexts/UserContext';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { pickSuggestion } from '../lib/suggestions';
 
 export default function Home() {
   const router = useRouter();
-  const { uid } = useUser();
+  const { uid, profile, isHydrated } = useUser();
 
-  const [message, setMessage] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  const [suggestion, setSuggestion] = useState('');
+  const qDate = typeof router.query.date === 'string' ? router.query.date : undefined;
+  const dateKey = qDate ?? dayjs().format('YYYY-MM-DD');
+  const [saving, setSaving] = useState(false);
 
-  // uid が無いなら login に戻す
   useEffect(() => {
-    if (!uid) {
-      router.replace(`/login?next=${encodeURIComponent("/")}`);
-      return;
-    }
-  }, [uid, router]);
+    setSuggestion(pickSuggestion());
+  }, []);
 
-  // Firestore からメッセージを取得
+  // 未選択ならオンボードへ
   useEffect(() => {
+    if (!isHydrated) return; // 復元待ち
+    if (!uid) router.replace('/onboard');
+  }, [uid, isHydrated, router]);
+
+  const onCheck = async () => {
     if (!uid) return;
-
-    (async () => {
-      setLoading(true);
-      try {
-        const ref = doc(db, "profiles", uid);
-        const snap = await getDoc(ref);
-        const data = snap.exists() ? (snap.data() as any) : null;
-
-        setMessage((data?.message as string) ?? "");
-      } catch (e) {
-        console.error(e);
-        setMessage("");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [uid]);
+    try {
+      setSaving(true);
+      await setDoc(doc(db, 'checks', `${uid}_${dateKey}`), {
+        uid,
+        dateKey,
+        itemsChecked: [],
+        completedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdAt: serverTimestamp()
+      }, { merge: true });
+      router.push('/praise');
+    } catch (e) {
+      console.error(e);
+      alert('完了の保存に失敗しました');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (!uid) return null;
 
   return (
     <main className="container">
-      <h1>メイン</h1>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontWeight: 700 }}>{profile?.displayName || 'ユーザー'}</div>
+        <div>
+          <button className="ghost" onClick={() => router.push('/settings')}>設定</button>
+        </div>
+      </header>
 
-      <section className="card" style={{ display: "grid", gap: 12 }}>
-        <button
-          onClick={() => router.push("/today")}
-          style={{ padding: "14px", fontSize: "1rem" }}
-        >
-          確認画面へ
-        </button>
+      <section style={{ marginTop: 18 }} className="card">
+        <h1>出発前の確認</h1>
+        <p className="helper">出発前に、必要な持ち物がそろっているか確認しましょう</p>
 
-        <button
-          onClick={() => router.push("/calendar")}
-          style={{ padding: "14px", fontSize: "1rem" }}
-        >
-          確認履歴へ
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 18 }}>
+          <button
+            onClick={onCheck}
+            disabled={saving}
+            style={{ padding: '28px 40px', fontSize: '1.2rem', borderRadius: 12 }}
+          >
+            確認する
+          </button>
+        </div>
 
-       <div style={{ marginTop: 4 }}>
-  <div style={{ fontWeight: 700, marginBottom: 6 }}>メッセージ</div>
-
-  <div
-    style={{
-      width: "100%",
-      padding: 12,
-      borderRadius: 10,
-      border: "1px solid var(--border)",
-      background: "var(--bg-subtle)",
-      lineHeight: 1.6,
-      minHeight: 84,
-      whiteSpace: "pre-wrap",
-    }}
-  >
-    {loading ? "読込中…" : message || "（メッセージは未設定です）"}
-  </div>
-
-  {/* 余白をしっかり取る */}
-  <div style={{ marginTop: 16 }}>
-    <button
-      onClick={() => router.push("/settings")}
-      style={{
-        width: "100%",
-        padding: "12px",
-        borderRadius: 10,
-        border: "1px solid var(--border)",
-        background: "transparent",
-        fontSize: "0.95rem",
-      }}
-    >
-      メッセージを編集する
-    </button>
-  </div>
-</div>
-
+        <div style={{ marginTop: 12, textAlign: 'center', color: 'var(--muted)' }}>{suggestion}</div>
       </section>
+
+      <footer style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+        <button onClick={() => router.push('/calendar')} style={{ flex: 1 }}>履歴</button>
+      </footer>
     </main>
   );
 }

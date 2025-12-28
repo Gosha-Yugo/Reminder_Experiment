@@ -1,5 +1,6 @@
 // src/pages/calendar.tsx
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
 import dayjs, { Dayjs } from 'dayjs';
 import { db } from '../lib/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -17,6 +18,7 @@ const WEEK_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
 
 export default function CalendarPage() {
   const { uid } = useUser();           // ← サインイン/ログインで選択したユーザー
+  const router = useRouter();
   const [days, setDays] = useState<DayInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -135,6 +137,9 @@ export default function CalendarPage() {
             <div className="detail-row"><div className="detail-key">自己申告</div><div className="detail-val">{selected.hasSelf ? 'あり' : 'なし'}</div></div>
             <div className="detail-row"><div className="detail-key">チェック完了</div><div className="detail-val">{selected.hasCheck ? 'あり' : 'なし'}</div></div>
             <div className="detail-row"><div className="detail-key">バッジ</div><div className="detail-val">{selected.badge}</div></div>
+            <div style={{ marginTop: 12 }}>
+              <button onClick={() => router.push({ pathname: '/', query: { date: selected.dateKey } })}>この日の確認へ</button>
+            </div>
           </div>
         )}
       </section>

@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useUser } from '../contexts/UserContext';
 
 function base64UrlToUint8Array(base64Url: string) {
   const padding = '='.repeat((4 - (base64Url.length % 4)) % 4);
@@ -11,6 +12,7 @@ function base64UrlToUint8Array(base64Url: string) {
 
 export default function PushSubscribeButton() {
   const [busy, setBusy] = useState(false);
+  const { uid } = useUser();
 
   const onClick = useCallback(async () => {
     try {
@@ -30,10 +32,11 @@ export default function PushSubscribeButton() {
         applicationServerKey: base64UrlToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY as string)
       });
 
+      // send with uid so server can store under user id
       await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(sub)
+        body: JSON.stringify({ uid, subscription: sub })
       });
 
       alert('この端末を通知先として登録しました');

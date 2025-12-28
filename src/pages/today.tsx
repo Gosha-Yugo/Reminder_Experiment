@@ -5,6 +5,7 @@ import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { PlanDoc, CheckDoc } from '../lib/types';
 import { useUser } from '../contexts/UserContext';
+import { pickSuggestion } from '../lib/suggestions';
 
 export default function Today() {
   const { uid } = useUser();
@@ -18,6 +19,7 @@ export default function Today() {
   const [actualDepartureAt, setActualDepartureAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState<string | null>(null);
 
   // 初期ロード：plans → checks
   useEffect(() => {
@@ -48,6 +50,10 @@ export default function Today() {
       }
     })();
   }, [uid, dateKey]);
+
+  useEffect(() => {
+    setSuggestion(pickSuggestion());
+  }, []);
 
   // 操作系
   const toggle = (name: string) => {
@@ -133,6 +139,7 @@ export default function Today() {
         </div>
 
         {msg && <div className="helper" style={{ marginTop: 8 }}>{msg}</div>}
+        {suggestion && <div style={{ marginTop: 12, textAlign: 'center', color: 'var(--muted)' }}>{suggestion}</div>}
       </section>
     </main>
   );

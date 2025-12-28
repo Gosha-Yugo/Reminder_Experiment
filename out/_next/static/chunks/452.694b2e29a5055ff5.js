@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[452],{3452:(e,r,s)=>{s.r(r),s.d(r,{default:()=>n});var c=s(4232);function n(){return(0,c.useEffect)(()=>{"serviceWorker"in navigator&&navigator.serviceWorker.register("/sw.js").catch(console.error)},[]),null}}}]);
