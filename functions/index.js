@@ -13,28 +13,11 @@ const logger = require("firebase-functions/logger");
 const express = require("express");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
-const webpush = require("web-push");
+const { getMessaging } = require("firebase-admin/messaging");
 
 initializeApp();
 const db = getFirestore();
-
-// 環境変数から VAPID 情報を取得
-// Cloud Functions では本番環境でも動作するようにハードコード
-const vapidMailto = process.env.VAPID_MAILTO || "mailto:koshakosha1004@gmail.com";
-const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || "BMTapkoVpKXF4wUnhLfeLPoTErNu6pmHLt96gh2nogROVmMK2Cndsxq37ITxQIF3l6n-bDUYSAcLj79-9rr2Quw";
-const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || "yurCINdwBhf9-Jf-F3pNMuXwWBuHiCNxxn--t-r08EY";
-
-// VAPID詳細を設定
-if (vapidMailto && vapidPublicKey && vapidPrivateKey) {
-  webpush.setVapidDetails(vapidMailto, vapidPublicKey, vapidPrivateKey);
-  logger.info("VAPID details configured successfully");
-} else {
-  logger.warn("VAPID details not configured", { 
-    hasMailto: !!vapidMailto, 
-    hasPublicKey: !!vapidPublicKey, 
-    hasPrivateKey: !!vapidPrivateKey 
-  });
-}
+const messaging = getMessaging();
 
 setGlobalOptions({ maxInstances: 10 });
 
@@ -44,13 +27,13 @@ app.use(express.json());
 // POST /api/push/subscribe
 app.post("/push/subscribe", async (req, res) => {
   try {
-    const { uid, subscription } = req.body;
-    if (!uid || !subscription) {
-      return res.status(400).json({ error: "bad request" });
+    const { uid, fcmToken } = req.body;
+    if (!uid || !fcmToken) {
+      return res.status(400).json({ error: "uid and fcmToken required" });
     }
     await db.collection("pushSubs").doc(uid).set({
       uid,
-      subscription,
+      fcmToken,
       updatedAt: new Date(),
       createdAt: new Date()
     }, { merge: true });
@@ -75,18 +58,25 @@ app.get("/push/test", async (req, res) => {
     }
 
     const data = snap.data();
-    const subscription = data.subscription || data;
+    const fcmToken = data.fcmToken;
 
-    logger.info("Sending notification", { uid, vapidConfigured: !!(vapidMailto && vapidPublicKey && vapidPrivateKey) });
+    if (!fcmToken) {
+      return res.status(400).json({ error: "no fcmToken" });
+    }
+
+    logger.info("Sending notification", { uid });
     
-    await webpush.sendNotification(
-      subscription,
-      JSON.stringify({
+    await messaging.send({
+      notification: {
         title: "テスト通知",
-        body: "タップするとチェックリストへ移動します",
-        url: "/today"
-      })
-    );
+        body: "タップするとチェックリストへ移動します"
+      },
+      webpush: {
+        fcmOptions: { link: "/today" }
+      },
+      token: fcmToken
+    });
+
     res.status(200).json({ ok: true, sent: true });
   } catch (error) {
     logger.error("test error:", error);

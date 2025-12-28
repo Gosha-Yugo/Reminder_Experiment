@@ -1,14 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useUser } from '../contexts/UserContext';
-
-function base64UrlToUint8Array(base64Url: string) {
-  const padding = '='.repeat((4 - (base64Url.length % 4)) % 4);
-  const base64 = (base64Url + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const raw = typeof window !== 'undefined' ? window.atob(base64) : Buffer.from(base64, 'base64').toString('binary');
-  const arr = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-  return arr;
-}
+import { getMsg } from '../lib/firebase';
+import { getToken } from 'firebase/messaging';
 
 export default function PushSubscribeButton() {
   const [busy, setBusy] = useState(false);
@@ -17,27 +10,39 @@ export default function PushSubscribeButton() {
   const onClick = useCallback(async () => {
     try {
       setBusy(true);
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        alert('このブラウザはWeb Pushに未対応です');
+      
+      // FCMメッセージング取得
+      const messaging = await getMsg();
+      if (!messaging) {
+        alert('このブラウザはCloud Messagingに未対応です');
         return;
       }
+
+      // 通知許可を要求
       const perm = await Notification.requestPermission();
       if (perm !== 'granted') {
         alert('通知が許可されていません');
         return;
       }
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: base64UrlToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY as string)
+
+      // FCMトークン取得
+      const token = await getToken(messaging, {
+        vapidKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
       });
 
-      // send with uid so server can store under user id
-      await fetch('/api/push/subscribe', {
+      if (!token) {
+        alert('トークン取得に失敗しました');
+        return;
+      }
+
+      // サーバーに送信
+      const res = await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ uid, subscription: sub })
+        body: JSON.stringify({ uid, fcmToken: token })
       });
+
+      if (!res.ok) throw new Error(`${res.status}`);
 
       alert('この端末を通知先として登録しました');
     } catch (e) {
@@ -46,7 +51,7 @@ export default function PushSubscribeButton() {
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [uid]);
 
   return <button onClick={onClick} disabled={busy}>この端末を通知先に登録</button>;
 }

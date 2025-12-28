@@ -2,14 +2,20 @@ const CACHE_VERSION = 'v1';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 const STATIC_ASSETS = [
-  '/',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(STATIC_CACHE).then((c) => c.addAll(STATIC_ASSETS)));
+  event.waitUntil(
+    caches.open(STATIC_CACHE).then((c) => {
+      // キャッシュに失敗してもスキップする
+      return c.addAll(STATIC_ASSETS).catch(() => {
+        console.warn('Failed to cache some assets, continuing anyway');
+      });
+    })
+  );
   self.skipWaiting();
 });
 
@@ -62,6 +68,24 @@ self.addEventListener('push', (event) => {
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
+
+// 定期的にサーバーをチェック（Safari対応用）
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'CHECK_NOTIFICATIONS') {
+    // messageイベントで定期チェック指示を受け取る
+    checkNotifications();
+  }
+});
+
+async function checkNotifications() {
+  try {
+    // Firestoreから直接取得するのは複雑なので、ここでは簡易的に
+    // 実装はクライアント側でポーリングする方が効率的
+  } catch (err) {
+    console.error('Failed to check notifications:', err);
+  }
+}
+
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
